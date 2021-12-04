@@ -1,5 +1,3 @@
-# Climate Change Project
+# Global Temperatures
 
-This project was developed for DS-325 Advanced Statistics. I took this class at Carroll College in the Fall of 2021. Projects Requirements and Challenges can be found in the Project Report.
-
-Feel free to use this code just cite Jaden C. Bathon as the author.
+The goal of this project was to look at Global Temperatures data find ways to visualize and draw conclusions from it. We were also tasked with finding a dataset and exploring the effect global temperatures have on the new data. In this instanced we used wildfire data and compared how temperature affected them. 
