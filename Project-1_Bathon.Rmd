@@ -1,0 +1,396 @@
+---
+title: "Project 1"
+author: "Bathon (Jaden)"
+date: "9/27/2021"
+output: 
+  html_document:
+    css: "style.css"
+    toc: true
+    toc_float: true
+    number_sections: false
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r imports, include=FALSE}
+library(tidyverse)
+library(plotly)
+library(gganimate)
+library(gifski)
+library(viridisLite)
+```
+
+```{r dataImports, include=FALSE}
+globalTemps2 <- read.csv("datasets/GlobalLandTemperaturesByCity1875.csv")
+```
+
+# Task 1
+
+## Mean World Temperatures
+
+```{r meanWorld, echo=FALSE}
+globalTemps3 <- globalTemps2 %>%
+  group_by(year) %>% 
+  summarise(
+    meanTemp = mean(AverageTemperature), 
+    lower = mean(AverageTemperature)-(qnorm(.975)*sd(AverageTemperature)/sqrt(n())),
+    upper = mean(AverageTemperature)+(qnorm(.975)*sd(AverageTemperature)/sqrt(n()))
+  )
+
+ggplot(globalTemps3, aes(x=year, y=meanTemp)) +
+  geom_point() +
+  geom_smooth(method = lm, ) +
+  geom_linerange(aes(ymin = lower, ymax = upper)) +
+  labs(title = "Global Mean Temperature from 1875", x = "Year", y = "Mean Temperature (°C)") 
+```
+
+<p>The model of the line in the figure above is $Global\ Mean\ Temperature = 0.009894 * Year - 1.519692$. Such that every year the Global Mean Temperature increases by 0.009894 °C. Using the model above we can forecast for a future year. For example: if we wanted to estimate the Global Mean Temperature for 2050 then $Global\ Mean\ Temperature = 0.009894 * 2050 - 1.519692 = 18.76301$. Then in 2050 the Global Mean Temperature will be about 18.76301, if the world keeps warming at the same rate.</p>
+
+## Mean City Temperature
+
+```{r meanCities}
+cityTemps <- globalTemps2 %>% 
+  filter(
+    (City == "Sydney" & Country == "Australia") |
+    (City == "Tokyo" & Country == "Japan") |
+    (City == "Paris" & Country == "France") |
+    (City == "Toronto" & Country == "Canada")
+  ) %>% 
+  mutate(City = factor(City), Country = factor(Country))
+
+cityTemps2 <-  cityTemps %>%  
+  group_by(year, City, Country) %>% 
+  summarise(
+    meanTemp = mean(AverageTemperature), 
+    lower = mean(AverageTemperature)-(qnorm(.975)*sd(AverageTemperature)/sqrt(n())),
+    upper = mean(AverageTemperature)+(qnorm(.975)*sd(AverageTemperature)/sqrt(n()))
+  ) %>% 
+  ungroup() %>% 
+  rename(city = City, country = Country) %>% 
+  arrange(city,year)
+```
+
+<p>Using the same dataset as we did for calculating the Global Mean Temperatures we can find the temperatures of different cities around the world.</p>
+
+### Paris
+
+```{r}
+paris <-  cityTemps2 %>% 
+  filter(city == "Paris")
+
+ggplot(paris ,aes(x=year, y=meanTemp)) +
+  geom_point() +
+  geom_smooth(method = lm, ) +
+  geom_linerange(aes(ymin = lower, ymax = upper)) +
+  labs(title = "Paris Mean Temperature from 1875", x = "Year", y = "Mean Temperature (°C)")
+```
+
+<p>The equation for the Mean Temperature of Paris is $Mean\ Temperature\ of\ Paris = 0.01014 * Year - 9.15127$. Paris is increasing by 0.01014 °C per year.</p>
+
+### Sydney
+
+```{r}
+sydney <-  cityTemps2 %>% 
+  filter(city == "Sydney")
+
+ggplot(sydney ,aes(x=year, y=meanTemp)) +
+  geom_point() +
+  geom_smooth(method = lm, ) +
+  geom_linerange(aes(ymin = lower, ymax = upper)) +
+  labs(title = "Sydney Mean Temperature from 1875", x = "Year", y = "Mean Temperature (°C)") 
+``` 
+
+<p>The equation for the Mean Temperature of Sydney is $Mean\ Temperature\ of\ Sydney = 0.006219 * Year + 4.999688$. Sydney is increasing by 0.006219 °C per year.</p>
+
+### Tokyo
+
+```{r}
+tokyo <-  cityTemps2 %>% 
+  filter(city == "Tokyo")
+
+ggplot(tokyo ,aes(x=year, y=meanTemp)) +
+  geom_point() +
+  geom_smooth(method = lm, ) +
+  geom_linerange(aes(ymin = lower, ymax = upper)) +
+  labs(title = "Tokyo Mean Temperature from 1875", x = "Year", y = "Mean Temperature (°C)") 
+```
+
+<p>The equation for the Mean Temperature of Tokyo is $Mean\ Temperature\ of\ Tokyo = 0.009313 * Year - 5.456912$. Tokyo is increasing by 0.009313 °C per year.</p>
+
+### Toronto
+
+```{r}
+toronto <-  cityTemps2 %>% 
+filter(city == "Toronto")
+
+ggplot(toronto, aes(x=year, y=meanTemp)) +
+  geom_point() +
+  geom_smooth(method = lm, ) +
+  geom_linerange(aes(ymin = lower, ymax = upper)) +
+  labs(title = "Toronto Mean Temperature from 1875", x = "Year", y = "Mean Temperature (°C)") 
+```
+
+<p>The equation for the Mean Temperature of Toronto is $Mean\ Temperature\ of\ Toronto = 0.01167 * Year - 16.56359$. Toronto is increasing by 0.01167 °C per year.</p>
+
+<p>The Figures above of Paris, Sydney, Tokyo, and Toronto all have increasing slopes, but the slopes differ from each other with Toronto having the highest and Sydney having the lowest. Every graph has different starting temperature which is interesting. Toronto and Paris are both in the northern hemisphere, but have drastically different temperatures in 1875; Toronto with a mean temperature of 3.47 °C in 1875 and Paris with mean temperature of 10.2 °C in 1875.</p>
+
+## Mean Country Tempertures
+
+```{r}
+  countryTemps <- globalTemps2 %>% 
+    filter(
+      (Country == "Australia") |
+        (Country == "China") |
+        (Country == "Iceland") |
+        (Country == "United States")
+    ) %>% 
+    mutate(Country = factor(Country))
+  
+  countryTemps2 <-  countryTemps %>%  
+    group_by(year, Country) %>% 
+    summarise(
+      meanTemp = mean(AverageTemperature), 
+      lower = mean(AverageTemperature)-(qnorm(.975)*sd(AverageTemperature)/sqrt(n())),
+      upper = mean(AverageTemperature)+(qnorm(.975)*sd(AverageTemperature)/sqrt(n()))
+    ) %>% 
+    ungroup() %>% 
+    rename(country = Country) %>% 
+    arrange(country, year)
+```
+
+<p>After looking at cities we took a broader view of the dataset by looking at countries. We selected different countries in different parts of the world to see if they have similar results to the cities. We wanted to see if different countries were also increasing at different rates as well as if they had different temperatures in 1875.</p>
+
+### Australia
+
+```{r}
+australia <- countryTemps2 %>% 
+  filter(country == "Australia")
+  
+ggplot(australia, aes(x=year, y=meanTemp)) +
+  geom_point() +
+  geom_smooth(method = lm, ) +
+  geom_linerange(aes(ymin = lower, ymax = upper)) +
+  labs(title = "Australia Mean Temperature from 1875", x = "Year", y = "Mean Temperature (°C)") 
+```
+
+<p>The equation for the Mean Temperature of Australia is $Mean\ Temperature\ of\ Australia = 0.00675 * Year + 3.77730$. Australia is increasing by 0.00675 °C per year.</p>
+
+### China
+
+```{r}
+china <- countryTemps2 %>% 
+  filter(country == "China")
+  
+ggplot(china, aes(x=year, y=meanTemp)) +
+  geom_point() +
+  geom_smooth(method = lm, ) +
+  geom_linerange(aes(ymin = lower, ymax = upper)) +
+  labs(title = "China Mean Temperature from 1875", x = "Year", y = "Mean Temperature (°C)") 
+```
+
+<p>The equation for the Mean Temperature of China is $Mean\ Temperature\ of\ China = 0.009963 * Year - 6.473305$. China is increasing by 0.009963  °C per year.</p>
+
+### Iceland
+
+```{r}
+iceland <- countryTemps2 %>% 
+  filter(country == "Iceland")
+  
+ggplot(china, aes(x=year, y=meanTemp)) +
+  geom_point() +
+  geom_smooth(method = lm, ) +
+  geom_linerange(aes(ymin = lower, ymax = upper)) +
+  labs(title = "Iceland Mean Temperature from 1875", x = "Year", y = "Mean Temperature (°C)")
+```
+
+<p>The equation for the Mean Temperature of Iceland is $Mean\ Temperature\ of\ Iceland = 0.008544 * Year - 14.867027$. Iceland is increasing by 0.009313 °C per year.</p>
+
+### United States
+
+```{r}
+unitedStates <- countryTemps2 %>% 
+  filter(country == "United States")
+  
+ggplot(unitedStates, aes(x=year, y=meanTemp)) +
+  geom_point() +
+  geom_smooth(method = lm, ) +
+  geom_linerange(aes(ymin = lower, ymax = upper)) +
+  labs(title = "United States Mean Temperature from 1875", x = "Year", y = "Mean Temperature (°C)") 
+```
+
+
+<p>The equation for the Mean Temperature of The United States is $Mean\ Temperature\ of\ The\ United\ States = 0.008466  * Year - 2.062024$. The United States is increasing by 0.008466  °C per year.</p>
+
+<p>The Figures above of Australia, China, Iceland, and The United States show similar results to the cities. Just like the cities, all of the Figures are increasing in temperature per year; China has the highest increase per year at 0.009963 and Australia with the lowest at 0.00675. The temperatures for both Iceland and The United States are also interesting where both are in the same hemisphere, but both have very different temperatures in 1875, just like the cities; Iceland with a mean temperature of 2.28 °C in 1875 and The United States with mean temperature of 13.5 °C in 1875.</p>
+
+# Task 2
+
+```{r, eval=FALSE}
+  world <- map_data("world")
+globalTemps5 <- globalTemps2 %>%
+  rename(region = Country) %>% 
+  group_by(year, region) %>% 
+  summarise(
+    meanTemp = mean(AverageTemperature), 
+    lower = mean(AverageTemperature)-(qnorm(.975)*sd(AverageTemperature)/sqrt(n())),
+    upper = mean(AverageTemperature)+(qnorm(.975)*sd(AverageTemperature)/sqrt(n()))
+  ) %>% 
+  mutate(
+    region = replace(region, region == "United States", "USA"),
+    region = replace(region, region == "United Kingdom", "UK"),
+    region = replace(region, region == "Congo", "Republic of Congo"),
+    region = replace(region, region == "Congo (Democratic Republic Of The)", "Democratic Republic of the Congo"),
+    region = replace(region, region == "CÃ´te D'Ivoire" , "Ivory Coast")
+    )
+
+mapTemps <- world %>% 
+  left_join(globalTemps5,by="region") %>% 
+  filter(!is.na(year))
+
+
+p <-  ggplot(mapTemps, aes(x=long, y = lat, group = group)) +
+  geom_polygon(aes(fill=meanTemp), color= "black") +
+  labs(title = "Mean Temperature of Countries: {current_frame} A.D.", x = "Longitude", y = "Latitude", fill = "Mean Temperature (?C)") +
+  scale_fill_viridis_c(option = "turbo", limits= c(-14,32)) + 
+  transition_manual(year) +
+  theme_custom()
+
+ animate(p, nframe = 138, renderer = gifski_renderer("map.gif"), height = 500, width = 800, fps=5, end_pause = 17)
+```
+
+<img src="images/map.gif" alt="Mean Temperatures of Countries"/>
+
+<p> After looking at the countries data from Task 1, We wanted to find a way to visualize the global warming each year by visualizing the mean temperature of each country in the dataset. This visual helps display how the world is slowly heating over time and how the temperature changes throughout the world. The colors help show how some countries are warmer. As the visual cycles through the years, one can see some countries are warming vary slowly while others are warming at a faster rate.</p>
+
+# Task 3
+```{r}
+wildfire <-  read.csv("datasets/wildfires.csv")
+
+wildfire2 <- wildfire %>% 
+  filter(FIREYEAR >= 1925 & FIREYEAR <= 2013 & FIRETYPECATEGORY == "WF") %>% 
+  select(
+    FIREYEAR,
+    SIZECLASS,
+    TOTALACRES,
+    LATDD83,
+    LONGDD83
+  ) %>% 
+  rename(
+    year = FIREYEAR,
+    sizeClass = SIZECLASS,
+    acres = TOTALACRES,
+    lat =LATDD83,
+    long =LONGDD83
+  )
+
+wildfire3 <- wildfire2 %>% 
+  group_by(year) %>% 
+  summarise(
+    count = n(), 
+    totalAcres = sum(acres, na.rm=T))
+
+unitedStatesTemp <- globalTemps2 %>% 
+  filter(Country == "United States") %>% 
+  group_by(year) %>% 
+  summarise(meanTemp = mean(AverageTemperature))
+
+wildfire4 <- wildfire3 %>% 
+  inner_join(unitedStatesTemp, by="year")
+
+wildfire5 <- wildfire2 %>% 
+  filter(acres >= 5000) %>% 
+  group_by(year) %>% 
+  summarise(
+    count = n(), 
+    totalAcres = sum(acres, na.rm=T)) %>% 
+  inner_join(unitedStatesTemp, by="year")
+
+wildfire6 <- wildfire2 %>% 
+  filter(acres <= 1000) %>% 
+  group_by(year) %>% 
+  summarise(
+    count = n(), 
+    totalAcres = sum(acres, na.rm=T)) %>% 
+  inner_join(unitedStatesTemp, by="year")
+```
+
+<a href="https://catalog.data.gov/dataset/national-usfs-fire-occurrence-point-feature-layer-1ea1c"><p>Wildfire data acquired from The US Forest Service</p></a>
+
+<p>For Task 3 we explored how the change in temperature in The United States is affecting the amount of wildfires and the cumulative acres burned by wildfires. To make this comparison we 'join' our temperature data for The United States on our data from the US Forest Service by the year.</p>
+
+## Number of USA Wildfires
+
+```{r}
+ggplot(wildfire4, aes(x=year,y=count,color=meanTemp)) +
+  geom_point(size=2) +
+  labs(title= "USA Wildfires from 1925", x="Year", y="Number of Wildfires", color="Mean Temperature (°C)") +
+  geom_smooth(color ="red") +
+  scale_color_viridis_c(option = "inferno") 
+```
+
+<p>The Figure above shows that wildfires have rapidly increased in numbers from 1925, but we could be having a lot more wildfires that are less than a 1000 acres, which is a Class C wildfire or lower. To look at if this is the case, a figure was created below of class G fires which are the biggest classification for wildfires. The figure above also include Temperature, but it is hard to see how the temperature relates to the number wildfires from this Figure so a new Figure will be presented later on.</p>
+
+## Number of Wildfires Over 5000 Acres
+
+```{r}
+ggplot(wildfire5, aes(x=year,y=count,color=meanTemp)) +
+  geom_point(size=2) +
+  labs(title= "USA Wildfires Over 5000 acres from 1925", x="Year", y="Number of Wildfires", color="Mean Temperature (°C)") +
+  geom_smooth(color ="red") +
+  scale_color_viridis_c(option = "inferno") 
+```
+
+<p>The Figure above shows that there is an increase of wildfires over 5000 acres per year. To contrast the Figure above the Figure below was create with class C and lower fires.</p>
+
+## Number of Wildfires Under 1000 Acres
+
+```{r}
+ggplot(wildfire6, aes(x=year,y=count,color=meanTemp)) +
+  geom_point(size=2) +
+  labs(title= "USA Wildfires Under 1000 acres from 1925", x="Year", y="Number of Wildfires", color="Mean Temperature (°C)") +
+  geom_smooth(color ="red") +
+  scale_color_viridis_c(option = "inferno") 
+```
+
+<p>Comparing class G wildfires and class C and lower we can see that wildfires are increasing over all, but class G fires are increasing at a slower rate. After looking at the total number of wildfires, we compared the cumulative acres being burned per year by these wildfires.</p>
+
+## Cumulative Acres Burned
+
+```{r, echo=FALSE}
+ggplot(wildfire4, aes(x=year,y=totalAcres,color=meanTemp)) +
+  geom_point(size=2) +
+  labs(title= "Cumulative USA Wildfire Acres Burned from 1925", x="Year", y="Cumulative Acres Burned", color="Mean Temperature (°C)") +
+  geom_smooth(color ="red") +
+  scale_color_viridis_c(option = "inferno")
+```
+
+<p>The Figure above shows that the cumulative acres burned did not increase until about 1980, even though the amount of wildfires started to increase before 1980. The data from 1980 is increasing in a relatively straight line. By zooming in on the data after 1980, a model to predict cumulative acres burned per year was found: $Cumulative\ Acres\ Burned = 68232  * year - 135115357$; meaning that the cumulative acres burned per year is increasing by about 68,232 acres per year. The relationship between mean temperature and cumulative acres burned is also hard to see with this Figure. To get a better visual of mean temperature's relationships with both the number of wildfires and cumulative acres burned we created two figures below.</p>
+
+## Number of Yearly Wildfires per °C
+
+```{r, echo=FALSE}
+ggplot(wildfire4, aes(x=meanTemp,y=count,color=meanTemp)) +
+  geom_point(size=2) +
+  labs(title= "Yearly USA Wildfires per °C", x="Mean Temperture (°C)", y="Number of Wildfires", color="Mean Temperature (°C)") +
+  geom_smooth(method = lm, color ="red") +
+  scale_color_viridis_c(option = "inferno")
+```
+
+<p>The Figure above shows that the number of wildfires have a direct relationship with temperature. We can create a model for the number of wildfires per degree 
+Celsius: $Number\ of\ Wildfires = 7432 * Mean\ Temperature - 103692$. For every degree Celsius increase in mean temperature the number of wildfires increases by 7432.</p>
+## Cumulative Yearly Acres Burned per °C
+
+```{r, echo=FALSE}
+ggplot(wildfire4, aes(x=meanTemp,y=totalAcres,color=meanTemp)) +
+  geom_point(size=2) +
+  labs(title= "Cumulative Yearly USA Wildfire Acres Burned per °C", x="Mean Temperture (°C)", y="Cumulative Acres Burned", color="Mean Temperature (°C)") +
+  geom_smooth(method = lm, color ="red") +
+  scale_color_viridis_c(option = "inferno") 
+```
+
+<p>The Figure above shows that the cumulative acres burned have a direct relationship with temperature. We can create a model for cumulative acres burned per degree 
+Celsius: $Cumulative\ Acres\ Burned = 1232015 * Mean\ Temperature - 17560176$. For every degree Celsius increase in mean temperature the cumulative acres burned increases by 1232015.</p>
+
